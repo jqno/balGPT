@@ -10,14 +10,13 @@ import (
 	"github.com/jqno/balGPT/internal/database"
 )
 
-const URL = "https://www.fcupdate.nl/uitslagen/s1598/nederland-keuken-kampioen-divisie-2022-2023/"
-
 type ScrapeData struct {
-	DB *database.DB
+	DB  *database.DB
+	URL string
 }
 
-func NewScrapeData(db *database.DB) *ScrapeData {
-	return &ScrapeData{DB: db}
+func NewScrapeData(db *database.DB, url string) *ScrapeData {
+	return &ScrapeData{DB: db, URL: url}
 }
 
 func (scraped *ScrapeData) Scrape() error {
@@ -30,7 +29,7 @@ func (scraped *ScrapeData) Scrape() error {
 		return nil
 	}
 
-	res, err := http.Get(URL)
+	res, err := http.Get(scraped.URL)
 	if err != nil {
 		return err
 	}

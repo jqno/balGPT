@@ -22,7 +22,7 @@ type App struct {
 
 func NewApp(cfg *config.Config) *App {
 	db := database.New(cfg.DBConnectionString)
-	scraper := scraper.NewScrapeData(db)
+	scraper := scraper.NewScrapeData(db, cfg.ScraperURL)
 	predictor := predictor.NewPredictor(db)
 	return &App{
 		Config:    cfg,

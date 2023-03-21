@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	DBConnectionString string
+	ScraperURL         string
 }
 
 func LoadConfig() *Config {
@@ -18,7 +19,10 @@ func LoadConfig() *Config {
 
 	connectionString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPass, dbName)
 
+	scraperURL := os.Getenv("SCRAPER_URL")
+
 	return &Config{
 		DBConnectionString: connectionString,
+		ScraperURL:         scraperURL,
 	}
 }
