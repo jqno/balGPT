@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/lib/pq"
@@ -28,4 +29,77 @@ func New(connectionString string) *DB {
 	}
 
 	return &DB{Conn: conn}
+}
+
+func (db *DB) GetLastScrape() (time.Time, error) {
+	var lastScrape time.Time
+	err := db.Conn.QueryRow("SELECT last_scrape FROM stats ORDER BY id DESC LIMIT 1").Scan(&lastScrape)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return lastScrape, nil
+}
+
+func (db *DB) UpdateLastScrape(scrapeTime time.Time) error {
+	_, err := db.Conn.Exec("INSERT INTO stats (last_scrape) VALUES ($1)", scrapeTime)
+	return err
+}
+
+func (db *DB) InsertOrUpdateMatch(homeTeam, awayTeam string, homeGoals, awayGoals int, dateStr string) error {
+	// Parse the date string
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		return err
+	}
+
+	// Insert or update the home team
+	homeTeamID, err := db.insertOrUpdateTeam(homeTeam)
+	if err != nil {
+		return err
+	}
+
+	// Insert or update the away team
+	awayTeamID, err := db.insertOrUpdateTeam(awayTeam)
+	if err != nil {
+		return err
+	}
+
+	// Check if the match already exists
+	var matchID int
+	err = db.Conn.QueryRow("SELECT id FROM matches WHERE home_team = $1 AND away_team = $2 AND date = $3",
+		homeTeamID, awayTeamID, date).Scan(&matchID)
+
+	switch {
+	case err == sql.ErrNoRows:
+		// Insert a new match
+		_, err := db.Conn.Exec("INSERT INTO matches (home_team, away_team, home_goals, away_goals, date) VALUES ($1, $2, $3, $4, $5)",
+			homeTeamID, awayTeamID, homeGoals, awayGoals, date)
+		return err
+	case err != nil:
+		return err
+	default:
+		// Update the existing match
+		_, err := db.Conn.Exec("UPDATE matches SET home_goals = $1, away_goals = $2 WHERE id = $3",
+			homeGoals, awayGoals, matchID)
+		return err
+	}
+}
+
+func (db *DB) insertOrUpdateTeam(name string) (int, error) {
+	var teamID int
+	err := db.Conn.QueryRow("SELECT id FROM teams WHERE name = $1", name).Scan(&teamID)
+
+	switch {
+	case err == sql.ErrNoRows:
+		// Insert a new team
+		err := db.Conn.QueryRow("INSERT INTO teams (name) VALUES ($1) RETURNING id", name).Scan(&teamID)
+		if err != nil {
+			return 0, err
+		}
+	case err != nil:
+		return 0, err
+	}
+
+	return teamID, nil
 }
