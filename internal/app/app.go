@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"github.com/jqno/balGPT/internal/database"
 	"github.com/jqno/balGPT/internal/predictor"
 	"github.com/jqno/balGPT/internal/scraper"
+	"golang.org/x/oauth2"
+	oauth2api "google.golang.org/api/oauth2/v2"
 )
 
 type App struct {
@@ -43,6 +46,53 @@ func (a *App) Run() {
 
 	fmt.Printf("Listening on port %s...\n", port)
 	http.ListenAndServe(":"+port, nil)
+}
+
+func googleAuthMiddleware(next http.Handler, allowedEmail string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accessTokenCookie, err := r.Cookie("access_token")
+		if err != nil {
+			http.Error(w, "access token cookie not found", http.StatusUnauthorized)
+			return
+		}
+
+		accessToken := accessTokenCookie.Value
+		client, err := getAuthenticatedClient(accessToken, allowedEmail)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "client", client)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getAuthenticatedClient(accessToken string, allowedEmail string) (*http.Client, error) {
+	ctx := context.Background()
+
+	// Use the access token to create an authenticated client
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: accessToken},
+	)
+	client := oauth2.NewClient(ctx, ts)
+
+	// Check if the token is valid
+	oauth2Service, err := oauth2api.New(client)
+	if err != nil {
+		return nil, err
+	}
+	tokenInfo, err := oauth2Service.Tokeninfo().AccessToken(accessToken).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the email address is allowed
+	if allowedEmail != tokenInfo.Email {
+		return nil, fmt.Errorf("unauthorized email address")
+	}
+
+	return client, nil
 }
 
 func handlePrediction(s *scraper.ScrapeData, p *predictor.Predictor) http.HandlerFunc {

@@ -7,3 +7,4 @@ export DB_PASS=pwd
 export DB_NAME=balgpt
 
 export SCRAPER_URL=https://www.fcupdate.nl/uitslagen/s1598/nederland-keuken-kampioen-divisie-2022-2023/
+export ALLOWED_EMAIL=xxx

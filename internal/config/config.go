@@ -8,6 +8,7 @@ import (
 type Config struct {
 	DBConnectionString string
 	ScraperURL         string
+	AllowedEmail       string
 }
 
 func LoadConfig() *Config {
@@ -16,13 +17,14 @@ func LoadConfig() *Config {
 	dbUser := os.Getenv("DB_USER")
 	dbPass := os.Getenv("DB_PASS")
 	dbName := os.Getenv("DB_NAME")
-
 	connectionString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", dbHost, dbPort, dbUser, dbPass, dbName)
 
 	scraperURL := os.Getenv("SCRAPER_URL")
+	allowedEmail := os.Getenv("ALLOWED_EMAIL")
 
 	return &Config{
 		DBConnectionString: connectionString,
 		ScraperURL:         scraperURL,
+		AllowedEmail:       allowedEmail,
 	}
 }
