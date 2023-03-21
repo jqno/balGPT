@@ -1,0 +1,15 @@
+# Go binary files
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Compiled Go code
+*.test
+*.out
+/balgpt-api
+
+# Svelte build output
+node_modules/
+public/build/
+
