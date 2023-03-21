@@ -34,6 +34,7 @@ func NewApp(cfg *config.Config) *App {
 
 func (a *App) Run() {
 	http.HandleFunc("/predict", handlePrediction(a.Scraper, a.Predictor))
+	http.HandleFunc("/team_id", handleTeamID(a.DB))
 
 	port := "8080"
 	if envPort := os.Getenv("PORT"); envPort != "" {
@@ -80,5 +81,30 @@ func handlePrediction(s *scraper.ScrapeData, p *predictor.Predictor) http.Handle
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(prediction)
+	}
+}
+
+func handleTeamID(db *database.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		teamName := r.URL.Query().Get("team_name")
+
+		if teamName == "" {
+			http.Error(w, "team_name is required.", http.StatusBadRequest)
+			return
+		}
+
+		teamID, err := db.GetTeamID(teamName)
+		if err != nil {
+			http.Error(w, "Error while fetching team ID.", http.StatusInternalServerError)
+			return
+		}
+
+		if teamID == 0 {
+			http.Error(w, "Team not found.", http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]int{"team_id": teamID})
 	}
 }

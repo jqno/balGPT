@@ -104,6 +104,16 @@ func (db *DB) insertOrUpdateTeam(name string) (int, error) {
 	return teamID, nil
 }
 
+func (db *DB) GetTeamID(teamName string) (int, error) {
+	var teamID int
+	err := db.Conn.QueryRow("SELECT id FROM teams WHERE name = $1", teamName).Scan(&teamID)
+	if err != nil {
+		return 0, err
+	}
+
+	return teamID, nil
+}
+
 func (db *DB) GetTeamAvgGoals(teamID int, isHomeTeam bool) (float64, error) {
 	var avgGoals float64
 	var err error
