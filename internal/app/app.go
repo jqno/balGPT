@@ -36,8 +36,9 @@ func NewApp(cfg *config.Config) *App {
 }
 
 func (a *App) Run() {
-	http.HandleFunc("/predict", handlePrediction(a.Scraper, a.Predictor))
-	http.HandleFunc("/team_id", handleTeamID(a.DB))
+	allowedEmail := a.Config.AllowedEmail
+	http.HandleFunc("/predict", googleAuthMiddleware(handlePrediction(a.Scraper, a.Predictor), allowedEmail))
+	http.HandleFunc("/team_id", googleAuthMiddleware(handleTeamID(a.DB), allowedEmail))
 
 	port := "8080"
 	if envPort := os.Getenv("PORT"); envPort != "" {
@@ -48,7 +49,7 @@ func (a *App) Run() {
 	http.ListenAndServe(":"+port, nil)
 }
 
-func googleAuthMiddleware(next http.Handler, allowedEmail string) http.Handler {
+func googleAuthMiddleware(next http.Handler, allowedEmail string) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessTokenCookie, err := r.Cookie("access_token")
 		if err != nil {
