@@ -1,3 +1,12 @@
+# Improve login flow
+
+> Let's modify index.html so that it shows only the login button and nothing else if we're not yet signed in, and that it shows the everything except the login button if we're signed in. Also add a message on the page after a failed sign-in attempt.
+
+You can modify the index.html file to show only the login button when not signed in and hide it when the user is signed in. To achieve this, you can wrap the content you want to show or hide inside two separate divs, and then toggle their visibility based on the user's authentication status. Additionally, you can display a message after a failed sign-in attempt.
+
+Update your index.html as follows:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -59,41 +68,21 @@
       });
     }
 
-    function makePrediction() {
-      const homeTeamId = document.getElementById('home_team_id').value;
-      const awayTeamId = document.getElementById('away_team_id').value;
+    // Rest of the script...
 
-      if (!accessToken) {
-        alert('Please sign in with Google first');
-        return;
-      }
-
-      if (!homeTeamId || !awayTeamId) {
-        alert('Please enter both team IDs');
-        return;
-      }
-
-      const url = `${apiBaseUrl}/predict?home_team_id=${homeTeamId}&away_team_id=${awayTeamId}`;
-
-      fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById('result').innerHTML = JSON.stringify(data);
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to make a prediction');
-      });
-    }
-
-    document.getElementById('predict_btn').addEventListener('click', makePrediction);
   </script>
   <script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
   <meta name="google-signin-client_id" content="{{.ClientID }}">
 </body>
 </html>
+```
+
+With these changes:
+
+1. The content you want to show when the user is signed in is wrapped inside a div with the ID signedInContent. By default, its display property is set to none.
+2. The content you want to show when the user is not signed in is wrapped inside a div with the ID signedOutContent. This includes the Google Sign-In button and an error message for failed sign-in attempts.
+3. When the user successfully signs in, the onSignIn function sets the display property of signedInContent to block and signedOutContent to none.
+4. If there's an error during sign-in, the onFailure function makes the error message visible by setting the display property of signInError to block.
+
+Now, the web page will only show the login button and an error message (if applicable) when the user is not signed in. Once the user is signed in, it will display the soccer prediction content and hide the login button.
+
