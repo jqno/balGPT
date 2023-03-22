@@ -25,7 +25,7 @@ func (scraped *ScrapeData) Scrape() error {
 		return err
 	}
 
-	if lastScrape.Format("2006-01-02") == time.Now().Format("2006-01-02") {
+	if !lastScrape.IsZero() && lastScrape.Format("2006-01-02") == time.Now().Format("2006-01-02") {
 		return nil
 	}
 
@@ -40,10 +40,10 @@ func (scraped *ScrapeData) Scrape() error {
 		return err
 	}
 
-	currentDate := ""
+	currentDate := time.Time{}
 	doc.Find("b, .line").EachWithBreak(func(i int, selection *goquery.Selection) bool {
-		if date := selection.Find("b").Text(); date != "" {
-			currentDate = date
+		if selection.Is("b") {
+			currentDate, _ = parseDutchDate(selection.Text())
 			return true
 		}
 
@@ -85,4 +85,23 @@ func (scraped *ScrapeData) Scrape() error {
 	}
 
 	return nil
+}
+
+func parseDutchDate(dateStr string) (time.Time, error) {
+	monthNameToNumber := map[string]string{
+		"januari": "01", "februari": "02", "maart": "03", "april": "04", "mei": "05", "juni": "06",
+		"juli": "07", "augustus": "08", "september": "09", "oktober": "10", "november": "11", "december": "12",
+	}
+
+	for monthName, monthNumber := range monthNameToNumber {
+		dateStr = strings.Replace(dateStr, monthName, monthNumber, 1)
+	}
+
+	// Parse the date string
+	date, err := time.Parse("02 01 2006", dateStr)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return date, nil
 }

@@ -35,6 +35,9 @@ func (db *DB) GetLastScrape() (time.Time, error) {
 	var lastScrape time.Time
 	err := db.Conn.QueryRow("SELECT last_scrape FROM stats ORDER BY id DESC LIMIT 1").Scan(&lastScrape)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return time.Time{}, nil
+		}
 		return time.Time{}, err
 	}
 
@@ -46,13 +49,7 @@ func (db *DB) UpdateLastScrape(scrapeTime time.Time) error {
 	return err
 }
 
-func (db *DB) InsertOrUpdateMatch(homeTeam, awayTeam string, homeGoals, awayGoals int, dateStr string) error {
-	// Parse the date string
-	date, err := time.Parse("2006-01-02", dateStr)
-	if err != nil {
-		return err
-	}
-
+func (db *DB) InsertOrUpdateMatch(homeTeam, awayTeam string, homeGoals, awayGoals int, date time.Time) error {
 	// Insert or update the home team
 	homeTeamID, err := db.insertOrUpdateTeam(homeTeam)
 	if err != nil {
