@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soccer Prediction</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    input[type="number"] { width: 50px; }
+  </style>
+</head>
+<body>
+  <h1>Soccer Prediction</h1>
+  <div>
+    <label for="home_team_id">Home Team ID:</label>
+    <input type="number" id="home_team_id" required>
+  </div>
+  <div>
+    <label for="away_team_id">Away Team ID:</label>
+    <input type="number" id="away_team_id" required>
+  </div>
+  <button id="predict_btn">Predict</button>
+  <div id="result"></div>
+
+  <script>
+    const clientId = 'YOUR_GOOGLE_CLIENT_ID'; // Replace with your Google OAuth2 client ID
+    const apiBaseUrl = 'YOUR_API_BASE_URL'; // Replace with your Go app's base URL
+
+    let accessToken = '';
+
+    function onSignIn(googleUser) {
+      const profile = googleUser.getBasicProfile();
+      accessToken = googleUser.getAuthResponse().access_token;
+    }
+
+    function onFailure(error) {
+      console.log(error);
+    }
+
+    function renderButton() {
+      gapi.signin2.render('signInBtn', {
+        'scope': 'profile email',
+        'width': 200,
+        'height': 50,
+        'longtitle': true,
+        'theme': 'dark',
+        'onsuccess': onSignIn,
+        'onfailure': onFailure
+      });
+    }
+
+    function makePrediction() {
+      const homeTeamId = document.getElementById('home_team_id').value;
+      const awayTeamId = document.getElementById('away_team_id').value;
+
+      if (!accessToken) {
+        alert('Please sign in with Google first');
+        return;
+      }
+
+      if (!homeTeamId || !awayTeamId) {
+        alert('Please enter both team IDs');
+        return;
+      }
+
+      const url = `${apiBaseUrl}/predict?home_team_id=${homeTeamId}&away_team_id=${awayTeamId}`;
+
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('result').innerHTML = JSON.stringify(data);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to make a prediction');
+      });
+    }
+
+    document.getElementById('predict_btn').addEventListener('click', makePrediction);
+  </script>
+</body>
+</html>
