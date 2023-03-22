@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/jqno/balGPT/internal/team"
 	_ "github.com/lib/pq"
 )
 
@@ -47,6 +48,25 @@ func (db *DB) GetLastScrape() (time.Time, error) {
 func (db *DB) UpdateLastScrape(scrapeTime time.Time) error {
 	_, err := db.Conn.Exec("INSERT INTO stats (last_scrape) VALUES ($1)", scrapeTime)
 	return err
+}
+
+func (db *DB) FetchTeamsFromDB() ([]team.Team, error) {
+	rows, err := db.Conn.Query("SELECT id, name FROM teams")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	teams := []team.Team{}
+	for rows.Next() {
+		var team team.Team
+		if err := rows.Scan(&team.ID, &team.Name); err != nil {
+			return nil, err
+		}
+		teams = append(teams, team)
+	}
+
+	return teams, nil
 }
 
 func (db *DB) InsertOrUpdateMatch(homeTeam, awayTeam string, homeGoals, awayGoals int, date time.Time) error {

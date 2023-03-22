@@ -14,11 +14,21 @@
     <h1>Soccer Prediction</h1>
     <div>
       <label for="home_team_id">Home Team ID:</label>
-      <input type="number" id="home_team_id" required>
+      <input list="teams" id="home_team_id" required>
+      <datalist id="teams">
+        {{range .Teams}}
+        <option value="{{.ID}}">{{.Name}}</option>
+        {{end}}
+      </datalist>
     </div>
     <div>
       <label for="away_team_id">Away Team ID:</label>
-      <input type="number" id="away_team_id" required>
+      <input list="teams" id="away_team_id" required>
+      <datalist id="teams">
+        {{range .Teams}}
+        <option value="{{.ID}}">{{.Name}}</option>
+        {{end}}
+      </datalist>
     </div>
     <button id="predict_btn">Predict</button>
     <div id="result"></div>

@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"html/template"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"strconv"
@@ -13,6 +13,7 @@ import (
 	"github.com/jqno/balGPT/internal/database"
 	"github.com/jqno/balGPT/internal/predictor"
 	"github.com/jqno/balGPT/internal/scraper"
+	"github.com/jqno/balGPT/internal/team"
 	"golang.org/x/oauth2"
 	oauth2api "google.golang.org/api/oauth2/v2"
 )
@@ -25,8 +26,9 @@ type App struct {
 }
 
 type TemplateData struct {
-	ClientID  string
+	ClientID   string
 	ApiBaseURL string
+	Teams      []team.Team
 }
 
 func NewApp(cfg *config.Config) *App {
@@ -43,7 +45,7 @@ func NewApp(cfg *config.Config) *App {
 
 func (a *App) Run() {
 	allowedEmail := a.Config.AllowedEmail
-	http.HandleFunc("/", indexHandler(a.Config.GoogleClientID, a.Config.ApiBaseURL))
+	http.HandleFunc("/", indexHandler(a.DB, a.Config.GoogleClientID, a.Config.ApiBaseURL))
 	http.HandleFunc("/predict", googleAuthMiddleware(handlePrediction(a.Scraper, a.Predictor), allowedEmail))
 	http.HandleFunc("/team_id", googleAuthMiddleware(handleTeamID(a.DB), allowedEmail))
 
@@ -103,11 +105,18 @@ func getAuthenticatedClient(accessToken string, allowedEmail string) (*http.Clie
 	return client, nil
 }
 
-func indexHandler(clientID string, apiBaseURL string) http.HandlerFunc {
+func indexHandler(db *database.DB, clientID string, apiBaseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		teams, err := db.FetchTeamsFromDB()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error fetching teams: %v", err), http.StatusInternalServerError)
+			return
+		}
+
 		data := TemplateData{
 			ClientID:   clientID,
 			ApiBaseURL: apiBaseURL,
+			Teams:      teams,
 		}
 
 		tmpl, err := template.ParseFiles("templates/index.html")
