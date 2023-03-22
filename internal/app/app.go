@@ -49,6 +49,9 @@ func (a *App) Run() {
 	http.HandleFunc("/predict", googleAuthMiddleware(handlePrediction(a.Scraper, a.Predictor), allowedEmail))
 	http.HandleFunc("/team_id", googleAuthMiddleware(handleTeamID(a.DB), allowedEmail))
 
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	port := "8080"
 	if envPort := os.Getenv("PORT"); envPort != "" {
 		port = envPort
