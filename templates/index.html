@@ -14,19 +14,21 @@
     <h1>Soccer Prediction</h1>
     <div>
       <label for="home_team_id">Home Team ID:</label>
-      <input list="teams" id="home_team_id" required>
-      <datalist id="teams">
+      <input list="home_teams" id="home_team_name" required>
+      <input type="hidden" id="home_team_id">
+      <datalist id="home_teams">
         {{range .Teams}}
-        <option value="{{.ID}}">{{.Name}}</option>
+        <option data-value="{{.ID}}">{{.Name}}</option>
         {{end}}
       </datalist>
     </div>
     <div>
       <label for="away_team_id">Away Team ID:</label>
-      <input list="teams" id="away_team_id" required>
-      <datalist id="teams">
+      <input list="away_teams" id="away_team_name" required>
+      <input type="hidden" id="away_team_id">
+      <datalist id="away_teams">
         {{range .Teams}}
-        <option value="{{.ID}}">{{.Name}}</option>
+        <option data-value="{{.ID}}">{{.Name}}</option>
         {{end}}
       </datalist>
     </div>
@@ -100,6 +102,16 @@
         alert('Failed to make a prediction');
       });
     }
+
+    document.getElementById('home_team_name').addEventListener('input', function (e) {
+      const selectedOption = e.target.list.options.namedItem(e.target.value);
+      document.getElementById('home_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : '';
+    });
+
+    document.getElementById('away_team_name').addEventListener('input', function (e) {
+      const selectedOption = e.target.list.options.namedItem(e.target.value);
+      document.getElementById('away_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : '';
+    });
 
     document.getElementById('predict_btn').addEventListener('click', makePrediction);
   </script>
