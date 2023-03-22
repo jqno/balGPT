@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"html/template"
 	"fmt"
 	"net/http"
 	"os"
@@ -23,6 +24,11 @@ type App struct {
 	Predictor *predictor.Predictor
 }
 
+type TemplateData struct {
+	ClientID  string
+	ApiBaseURL string
+}
+
 func NewApp(cfg *config.Config) *App {
 	db := database.New(cfg.DBConnectionString)
 	scraper := scraper.NewScrapeData(db, cfg.ScraperURL)
@@ -37,6 +43,7 @@ func NewApp(cfg *config.Config) *App {
 
 func (a *App) Run() {
 	allowedEmail := a.Config.AllowedEmail
+	http.HandleFunc("/", indexHandler(a.Config.GoogleClientID, a.Config.ApiBaseURL))
 	http.HandleFunc("/predict", googleAuthMiddleware(handlePrediction(a.Scraper, a.Predictor), allowedEmail))
 	http.HandleFunc("/team_id", googleAuthMiddleware(handleTeamID(a.DB), allowedEmail))
 
@@ -94,6 +101,27 @@ func getAuthenticatedClient(accessToken string, allowedEmail string) (*http.Clie
 	}
 
 	return client, nil
+}
+
+func indexHandler(clientID string, apiBaseURL string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data := TemplateData{
+			ClientID:   clientID,
+			ApiBaseURL: apiBaseURL,
+		}
+
+		tmpl, err := template.ParseFiles("templates/index.html")
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error parsing template: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		err = tmpl.Execute(w, data)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error executing template: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
 }
 
 func handlePrediction(s *scraper.ScrapeData, p *predictor.Predictor) http.HandlerFunc {

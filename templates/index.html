@@ -23,8 +23,8 @@
   <div id="result"></div>
 
   <script>
-    const clientId = 'YOUR_GOOGLE_CLIENT_ID'; // Replace with your Google OAuth2 client ID
-    const apiBaseUrl = 'YOUR_API_BASE_URL'; // Replace with your Go app's base URL
+    const clientId = '{{.ClientID}}';
+    const apiBaseUrl = '{{.ApiBaseURL}}';
 
     let accessToken = '';
 
@@ -83,5 +83,8 @@
 
     document.getElementById('predict_btn').addEventListener('click', makePrediction);
   </script>
+  <script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
+  <meta name="google-signin-client_id" content="{{.ClientID}}">
+  <div id="signInBtn"></div>
 </body>
 </html>
