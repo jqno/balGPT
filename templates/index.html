@@ -7,7 +7,17 @@
   <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-  <div id="signedInContent">
+  <div id="signedOutContent" style="display:block;">
+    <div id="loginForm">
+      <label for="username">Username:</label>
+      <input type="text" id="username" required>
+      <label for="password">Password:</label>
+      <input type="password" id="password" required>
+      <button id="loginBtn">Log in</button>
+      <div id="loginError" style="color: red; display: none;">Invalid username or password. Please try again.</div>
+    </div>
+  </div>
+  <div id="signedInContent" style="display:none;">
     <h1>Soccer Prediction</h1>
     {{if .Teams}}
       <div>
@@ -42,11 +52,46 @@
   <script>
     const apiBaseUrl = '{{.ApiBaseURL}}';
 
+    function updateContentVisibility() {
+      const signedIn = sessionStorage.getItem('auth') === 'true';
+      document.getElementById('signedInContent').style.display = signedIn ? 'block' : 'none';
+      document.getElementById('signedOutContent').style.display = signedIn ? 'none' : 'block';
+    }
+
+    function signIn() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        document.getElementById('signInError').style.display = 'block';
+        return;
+      }
+
+      sessionStorage.setItem('auth', 'true');
+      sessionStorage.setItem('authHeader', 'Basic ' + btoa(username + ':' + password));
+      updateContentVisibility();
+    }
+
+    function signOut() {
+      sessionStorage.removeItem('auth');
+      sessionStorage.removeItem('authHeader');
+      updateContentVisibility();
+    }
+
     function scrapeData() {
       const url = `${apiBaseUrl}/scrape`;
 
+      const auth = sessionStorage.getItem('authHeader');
+      if (!auth) {
+        alert('Please log in first');
+        return;
+      }
+
       fetch(url, {
         method: 'GET',
+        headers: {
+          'Authorization': auth
+        }
       })
       .then(response => {
         if (response.ok) {
@@ -72,8 +117,17 @@
 
       const url = `${apiBaseUrl}/predict?home_team_id=${homeTeamId}&away_team_id=${awayTeamId}`;
 
+      const auth = sessionStorage.getItem('authHeader');
+      if (!auth) {
+        alert('Please log in first');
+        return;
+      }
+
       fetch(url, {
         method: 'GET',
+        headers: {
+          'Authorization': auth
+        }
       })
       .then(response => response.json())
       .then(data => {
@@ -120,6 +174,9 @@
 
     document.getElementById('scrape_btn')?.addEventListener('click', scrapeData);
     document.getElementById('predict_btn')?.addEventListener('click', makePrediction);
+
+    document.getElementById('loginBtn').addEventListener('click', signIn);
+    updateContentVisibility();
   </script>
 </body>
 </html>

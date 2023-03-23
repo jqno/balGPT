@@ -41,9 +41,9 @@ func NewApp(cfg *config.Config) *App {
 
 func (a *App) Run() {
 	http.HandleFunc("/", indexHandler(a.DB, a.Config.ApiBaseURL))
-	http.HandleFunc("/predict", handlePrediction(a.Scraper, a.Predictor))
-	http.HandleFunc("/scrape", handleScrape(a.Scraper))
-	http.HandleFunc("/team_id", handleTeamID(a.DB))
+	http.HandleFunc("/predict", checkAuth(handlePrediction(a.Scraper, a.Predictor), a.Config.AuthUsername, a.Config.AuthPassword))
+	http.HandleFunc("/scrape", checkAuth(handleScrape(a.Scraper), a.Config.AuthUsername, a.Config.AuthPassword))
+	http.HandleFunc("/team_id", checkAuth(handleTeamID(a.DB), a.Config.AuthUsername, a.Config.AuthPassword))
 
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
@@ -55,6 +55,18 @@ func (a *App) Run() {
 
 	fmt.Printf("Listening on port %s...\n", port)
 	http.ListenAndServe(":"+port, nil)
+}
+
+func checkAuth(h http.HandlerFunc, validUsername, validPassword string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if !ok || username != validUsername || password != validPassword {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized.", http.StatusUnauthorized)
+			return
+		}
+		h(w, r)
+	}
 }
 
 func indexHandler(db *database.DB, apiBaseURL string) http.HandlerFunc {
