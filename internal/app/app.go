@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -60,6 +61,7 @@ func (a *App) Run() {
 func checkAuth(h http.HandlerFunc, validUsername, validPassword string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
+		log.Printf("Login attempt by %s: %v", username, ok)
 		if !ok || username != validUsername || password != validPassword {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 			http.Error(w, "Unauthorized.", http.StatusUnauthorized)
@@ -130,6 +132,8 @@ func handlePrediction(s *scraper.ScrapeData, p *predictor.Predictor) http.Handle
 			return
 		}
 
+		log.Printf("Prediction for home_team_id=%d, away_team_id=%d: %d - %d", homeTeamID, awayTeamID, prediction.HomeGoals, prediction.AwayGoals)
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(prediction)
 	}
@@ -142,6 +146,8 @@ func handleScrape(s *scraper.ScrapeData) http.HandlerFunc {
 			http.Error(w, "Error while scraping data.", http.StatusInternalServerError)
 			return
 		}
+
+		log.Printf("Scraping complete")
 
 		w.WriteHeader(http.StatusOK)
 	}
