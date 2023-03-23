@@ -60,12 +60,12 @@
     }
 
     document.getElementById('home_team_name').addEventListener('input', function (e) {
-      const selectedOption = e.target.list.options.namedItem(e.target.value);
+      const selectedOption = Array.from(e.target.list.options).find(option => option.textContent === e.target.value);
       document.getElementById('home_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : '';
     });
 
     document.getElementById('away_team_name').addEventListener('input', function (e) {
-      const selectedOption = e.target.list.options.namedItem(e.target.value);
+      const selectedOption = Array.from(e.target.list.options).find(option => option.textContent === e.target.value);
       document.getElementById('away_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : '';
     });
 
