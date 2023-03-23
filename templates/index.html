@@ -77,12 +77,35 @@
       })
       .then(response => response.json())
       .then(data => {
-        document.getElementById('result').innerHTML = JSON.stringify(data);
+        document.getElementById('result').innerHTML = formatPredictionResult(data);
       })
       .catch(error => {
         console.error('Error:', error);
         alert('Failed to make a prediction');
       });
+    }
+
+    function formatPredictionResult(data) {
+      const homeGoals = data.HomeGoals;
+      const awayGoals = data.AwayGoals;
+
+      return `
+        <h2>Prediction Result</h2>
+        <table>
+          <tr>
+            <th>Team</th>
+            <th>Goals</th>
+          </tr>
+          <tr>
+            <td>Home Team</td>
+            <td>${homeGoals}</td>
+          </tr>
+          <tr>
+            <td>Away Team</td>
+            <td>${awayGoals}</td>
+          </tr>
+        </table>
+      `;
     }
 
     document.getElementById('home_team_name')?.addEventListener('input', function (e) {
