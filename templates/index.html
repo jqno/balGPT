@@ -9,31 +9,57 @@
 <body>
   <div id="signedInContent">
     <h1>Soccer Prediction</h1>
-    <div>
-      <label for="home_team_id">Home Team ID:</label>
-      <input list="home_teams" id="home_team_name" required>
-      <input type="hidden" id="home_team_id">
-      <datalist id="home_teams">
-        {{range .Teams}}
-        <option data-value="{{.ID}}">{{.Name}}</option>
-        {{end}}
-      </datalist>
-    </div>
-    <div>
-      <label for="away_team_id">Away Team ID:</label>
-      <input list="away_teams" id="away_team_name" required>
-      <input type="hidden" id="away_team_id">
-      <datalist id="away_teams">
-        {{range .Teams}}
-        <option data-value="{{.ID}}">{{.Name}}</option>
-        {{end}}
-      </datalist>
-    </div>
-    <button id="predict_btn">Predict</button>
-    <div id="result"></div>
+    {{if .Teams}}
+      <div>
+        <label for="home_team_id">Home Team ID:</label>
+        <input list="home_teams" id="home_team_name" required>
+        <input type="hidden" id="home_team_id">
+        <datalist id="home_teams">
+          {{range .Teams}}
+          <option data-value="{{.ID}}">{{.Name}}</option>
+          {{end}}
+        </datalist>
+      </div>
+      <div>
+        <label for="away_team_id">Away Team ID:</label>
+        <input list="away_teams" id="away_team_name" required>
+        <input type="hidden" id="away_team_id">
+        <datalist id="away_teams">
+          {{range .Teams}}
+          <option data-value="{{.ID}}">{{.Name}}</option>
+          {{end}}
+        </datalist>
+      </div>
+      <button id="predict_btn">Predict</button>
+      <div id="result"></div>
+    {{else}}
+      <div>
+        <p>No teams found. Please scrape data to get team information.</p>
+        <button id="scrape_btn">Scrape Data</button>
+      </div>
+    {{end}}
   </div>
   <script>
     const apiBaseUrl = '{{.ApiBaseURL}}';
+
+    function scrapeData() {
+      const url = `${apiBaseUrl}/scrape`;
+
+      fetch(url, {
+        method: 'GET',
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('Data scraped successfully.');
+        } else {
+          alert('Failed to scrape data.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to scrape data.');
+      });
+    }
 
     function makePrediction() {
       const homeTeamId = document.getElementById('home_team_id').value;
@@ -59,17 +85,18 @@
       });
     }
 
-    document.getElementById('home_team_name').addEventListener('input', function (e) {
+    document.getElementById('home_team_name')?.addEventListener('input', function (e) {
       const selectedOption = Array.from(e.target.list.options).find(option => option.textContent === e.target.value);
       document.getElementById('home_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : '';
     });
 
-    document.getElementById('away_team_name').addEventListener('input', function (e) {
+    document.getElementById('away_team_name')?.addEventListener('input', function (e) {
       const selectedOption = Array.from(e.target.list.options).find(option => option.textContent === e.target.value);
       document.getElementById('away_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : '';
     });
 
-    document.getElementById('predict_btn').addEventListener('click', makePrediction);
+    document.getElementById('scrape_btn')?.addEventListener('click', scrapeData);
+    document.getElementById('predict_btn')?.addEventListener('click', makePrediction);
   </script>
 </body>
 </html>

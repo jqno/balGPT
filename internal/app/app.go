@@ -42,6 +42,7 @@ func NewApp(cfg *config.Config) *App {
 func (a *App) Run() {
 	http.HandleFunc("/", indexHandler(a.DB, a.Config.ApiBaseURL))
 	http.HandleFunc("/predict", handlePrediction(a.Scraper, a.Predictor))
+	http.HandleFunc("/scrape", handleScrape(a.Scraper))
 	http.HandleFunc("/team_id", handleTeamID(a.DB))
 
 	fs := http.FileServer(http.Dir("static"))
@@ -119,6 +120,18 @@ func handlePrediction(s *scraper.ScrapeData, p *predictor.Predictor) http.Handle
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(prediction)
+	}
+}
+
+func handleScrape(s *scraper.ScrapeData) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := s.Scrape()
+		if err != nil {
+			http.Error(w, "Error while scraping data.", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
