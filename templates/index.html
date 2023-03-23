@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-  <div id="signedInContent" style="display:none;">
+  <div id="signedInContent">
     <h1>Soccer Prediction</h1>
     <div>
       <label for="home_team_id">Home Team ID:</label>
@@ -32,50 +32,12 @@
     <button id="predict_btn">Predict</button>
     <div id="result"></div>
   </div>
-  <div id="signedOutContent">
-    <h1>Please sign in</h1>
-    <div id="signInBtn"></div>
-    <div id="signInError" style="color: red; display: none;">Failed to sign in. Please try again.</div>
-  </div>
   <script>
-    const clientId = '{{.ClientID}}';
     const apiBaseUrl = '{{.ApiBaseURL}}';
-
-    let accessToken = '';
-
-    function onSignIn(googleUser) {
-      const profile = googleUser.getBasicProfile();
-      accessToken = googleUser.getAuthResponse().access_token;
-
-      document.getElementById('signedInContent').style.display = 'block';
-      document.getElementById('signedOutContent').style.display = 'none';
-    }
-
-    function onFailure(error) {
-      console.log(error);
-      document.getElementById('signInError').style.display = 'block';
-    }
-
-    function renderButton() {
-      gapi.signin2.render('signInBtn', {
-        'scope': 'profile email',
-        'width': 200,
-        'height': 50,
-        'longtitle': true,
-        'theme': 'dark',
-        'onsuccess': onSignIn,
-        'onfailure': onFailure
-      });
-    }
 
     function makePrediction() {
       const homeTeamId = document.getElementById('home_team_id').value;
       const awayTeamId = document.getElementById('away_team_id').value;
-
-      if (!accessToken) {
-        alert('Please sign in with Google first');
-        return;
-      }
 
       if (!homeTeamId || !awayTeamId) {
         alert('Please enter both team IDs');
@@ -86,9 +48,6 @@
 
       fetch(url, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
       })
       .then(response => response.json())
       .then(data => {
@@ -112,7 +71,5 @@
 
     document.getElementById('predict_btn').addEventListener('click', makePrediction);
   </script>
-  <script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
-  <meta name="google-signin-client_id" content="{{.ClientID }}">
 </body>
 </html>

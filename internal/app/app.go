@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -14,8 +13,6 @@ import (
 	"github.com/jqno/balGPT/internal/predictor"
 	"github.com/jqno/balGPT/internal/scraper"
 	"github.com/jqno/balGPT/internal/team"
-	"golang.org/x/oauth2"
-	oauth2api "google.golang.org/api/oauth2/v2"
 )
 
 type App struct {
@@ -26,7 +23,6 @@ type App struct {
 }
 
 type TemplateData struct {
-	ClientID   string
 	ApiBaseURL string
 	Teams      []team.Team
 }
@@ -44,10 +40,9 @@ func NewApp(cfg *config.Config) *App {
 }
 
 func (a *App) Run() {
-	allowedEmail := a.Config.AllowedEmail
-	http.HandleFunc("/", indexHandler(a.DB, a.Config.GoogleClientID, a.Config.ApiBaseURL))
-	http.HandleFunc("/predict", googleAuthMiddleware(handlePrediction(a.Scraper, a.Predictor), allowedEmail))
-	http.HandleFunc("/team_id", googleAuthMiddleware(handleTeamID(a.DB), allowedEmail))
+	http.HandleFunc("/", indexHandler(a.DB, a.Config.ApiBaseURL))
+	http.HandleFunc("/predict", handlePrediction(a.Scraper, a.Predictor))
+	http.HandleFunc("/team_id", handleTeamID(a.DB))
 
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
@@ -61,54 +56,7 @@ func (a *App) Run() {
 	http.ListenAndServe(":"+port, nil)
 }
 
-func googleAuthMiddleware(next http.Handler, allowedEmail string) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		accessTokenCookie, err := r.Cookie("access_token")
-		if err != nil {
-			http.Error(w, "access token cookie not found", http.StatusUnauthorized)
-			return
-		}
-
-		accessToken := accessTokenCookie.Value
-		client, err := getAuthenticatedClient(accessToken, allowedEmail)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), "client", client)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func getAuthenticatedClient(accessToken string, allowedEmail string) (*http.Client, error) {
-	ctx := context.Background()
-
-	// Use the access token to create an authenticated client
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: accessToken},
-	)
-	client := oauth2.NewClient(ctx, ts)
-
-	// Check if the token is valid
-	oauth2Service, err := oauth2api.New(client)
-	if err != nil {
-		return nil, err
-	}
-	tokenInfo, err := oauth2Service.Tokeninfo().AccessToken(accessToken).Do()
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if the email address is allowed
-	if allowedEmail != tokenInfo.Email {
-		return nil, fmt.Errorf("unauthorized email address")
-	}
-
-	return client, nil
-}
-
-func indexHandler(db *database.DB, clientID string, apiBaseURL string) http.HandlerFunc {
+func indexHandler(db *database.DB, apiBaseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		teams, err := db.FetchTeamsFromDB()
 		if err != nil {
@@ -117,7 +65,6 @@ func indexHandler(db *database.DB, clientID string, apiBaseURL string) http.Hand
 		}
 
 		data := TemplateData{
-			ClientID:   clientID,
 			ApiBaseURL: apiBaseURL,
 			Teams:      teams,
 		}

@@ -8,6 +8,3 @@ export DB_NAME=balgpt
 
 export SCRAPER_URL=https://www.fcupdate.nl/uitslagen/s1598/nederland-keuken-kampioen-divisie-2022-2023/
 export API_BASE_URL=http://localhost:8080
-export ALLOWED_EMAIL=xxx
-
-echo "Don't forget to export GOOGLE_CLIENT_ID !"
