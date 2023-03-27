@@ -1,0 +1,28 @@
+# fly.toml file generated for balgpt on 2023-03-27T19:57:10+02:00
+
+app = "balgpt"
+kill_timeout = 0
+primary_region = "ams"
+
+[build]
+  builtin = "go"
+
+[env]
+  API_BASE_URL = "balgpt.fly.dev"
+  PORT = "8080"
+  SCRAPER_URL = "https://www.fcupdate.nl/uitslagen/s1598/nederland-keuken-kampioen-divisie-2022-2023/"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8080
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
