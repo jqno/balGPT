@@ -7,7 +7,7 @@
 # Compiled Go code
 *.test
 *.out
-/balgpt-api
+/balGPT
 
 # Svelte build output
 node_modules/
