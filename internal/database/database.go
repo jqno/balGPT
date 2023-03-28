@@ -14,7 +14,7 @@ type DB struct {
 	Conn *sql.DB
 }
 
-func New(connectionString string) *DB {
+func New(connectionString string, appBaseDir string) *DB {
 	conn, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		panic(err)
@@ -25,7 +25,7 @@ func New(connectionString string) *DB {
 		panic(fmt.Errorf("unable to create postgres driver instance: %v", err))
 	}
 
-	if err := RunMigrations(pgDriver); err != nil {
+	if err := RunMigrations(pgDriver, appBaseDir); err != nil {
 		panic(fmt.Errorf("failed to run migrations: %v", err))
 	}
 

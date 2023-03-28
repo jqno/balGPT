@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/jqno/balGPT/internal/config"
@@ -29,7 +30,7 @@ type TemplateData struct {
 }
 
 func NewApp(cfg *config.Config) *App {
-	db := database.New(cfg.DBConnectionString)
+	db := database.New(cfg.DBConnectionString, cfg.AppBaseDir)
 	scraper := scraper.NewScrapeData(db, cfg.ScraperURL)
 	predictor := predictor.NewPredictor(db)
 	return &App{
@@ -41,12 +42,13 @@ func NewApp(cfg *config.Config) *App {
 }
 
 func (a *App) Run() {
-	http.HandleFunc("/", indexHandler(a.DB, a.Config.ApiBaseURL))
+	http.HandleFunc("/", indexHandler(a.DB, a.Config.AppBaseDir, a.Config.ApiBaseURL))
 	http.HandleFunc("/predict", checkAuth(handlePrediction(a.Scraper, a.Predictor), a.Config.AuthUsername, a.Config.AuthPassword))
 	http.HandleFunc("/scrape", checkAuth(handleScrape(a.Scraper), a.Config.AuthUsername, a.Config.AuthPassword))
 	http.HandleFunc("/team_id", checkAuth(handleTeamID(a.DB), a.Config.AuthUsername, a.Config.AuthPassword))
 
-	fs := http.FileServer(http.Dir("static"))
+	staticDir := filepath.Join(a.Config.AppBaseDir, "static")
+	fs := http.FileServer(http.Dir(staticDir))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	port := "8080"
@@ -71,7 +73,7 @@ func checkAuth(h http.HandlerFunc, validUsername, validPassword string) http.Han
 	}
 }
 
-func indexHandler(db *database.DB, apiBaseURL string) http.HandlerFunc {
+func indexHandler(db *database.DB, appBaseDir string, apiBaseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		teams, err := db.FetchTeamsFromDB()
 		if err != nil {
@@ -84,7 +86,8 @@ func indexHandler(db *database.DB, apiBaseURL string) http.HandlerFunc {
 			Teams:      teams,
 		}
 
-		tmpl, err := template.ParseFiles("templates/index.html")
+		templateFile := filepath.Join(appBaseDir, "templates/index.html")
+		tmpl, err := template.ParseFiles(templateFile)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error parsing template: %v", err), http.StatusInternalServerError)
 			return

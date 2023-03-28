@@ -11,6 +11,7 @@ type Config struct {
 	AuthPassword       string
 	ScraperURL         string
 	ApiBaseURL         string
+	AppBaseDir         string
 }
 
 func LoadConfig() *Config {
@@ -27,11 +28,17 @@ func LoadConfig() *Config {
 	scraperURL := os.Getenv("SCRAPER_URL")
 	apiBaseURL := os.Getenv("API_BASE_URL")
 
+	appBaseDir := os.Getenv("APP_BASE_DIR")
+	if appBaseDir == "" {
+		appBaseDir = "."
+	}
+
 	return &Config{
 		DBConnectionString: connectionString,
 		AuthUsername:       authUsername,
 		AuthPassword:       authPassword,
 		ScraperURL:         scraperURL,
 		ApiBaseURL:         apiBaseURL,
+		AppBaseDir:         appBaseDir,
 	}
 }

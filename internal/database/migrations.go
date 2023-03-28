@@ -4,17 +4,14 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
-	"runtime"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func RunMigrations(conn database.Driver) error {
-	_, b, _, _ := runtime.Caller(0)
-	basepath := filepath.Dir(b)
-	migrationsPath := filepath.Join(basepath, "../../db/migrations")
+func RunMigrations(conn database.Driver, appBaseDir string) error {
+	migrationsPath := filepath.Join(appBaseDir, "db", "migrations")
 
 	migrationUrl := fmt.Sprintf("file://%s", migrationsPath)
 

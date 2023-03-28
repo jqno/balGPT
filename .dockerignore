@@ -1,0 +1,17 @@
+# flyctl launch added from .gitignore
+# Go binary files
+**/*.exe
+**/*.dll
+**/*.so
+**/*.dylib
+
+# Compiled Go code
+**/*.test
+**/*.out
+balGPT
+
+# Svelte build output
+**/node_modules
+**/public/build
+
+fly.toml

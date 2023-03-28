@@ -1,14 +1,15 @@
-# fly.toml file generated for balgpt on 2023-03-27T19:57:10+02:00
+# fly.toml file generated for balgpt on 2023-03-28T10:01:26+02:00
 
 app = "balgpt"
 kill_timeout = 0
 primary_region = "ams"
 
 [build]
-  builtin = "go"
+  dockerfile = "Dockerfile"
 
 [env]
   API_BASE_URL = "balgpt.fly.dev"
+  APP_BASE_DIR = "/app"
   PORT = "8080"
   SCRAPER_URL = "https://www.fcupdate.nl/uitslagen/s1598/nederland-keuken-kampioen-divisie-2022-2023/"
 
