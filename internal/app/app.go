@@ -42,7 +42,8 @@ func NewApp(cfg *config.Config) *App {
 }
 
 func (a *App) Run() {
-	http.HandleFunc("/", indexHandler(a.DB, a.Config.AppBaseDir, a.Config.ApiBaseURL))
+	http.HandleFunc("/", indexHandler(a.DB, a.Config.AppBaseDir, a.Config.ApiBaseURL, a.Config.AuthUsername, a.Config.AuthPassword))
+	http.HandleFunc("/login", checkAuth(loginHandler(), a.Config.AuthUsername, a.Config.AuthPassword))
 	http.HandleFunc("/predict", checkAuth(handlePrediction(a.Scraper, a.Predictor), a.Config.AuthUsername, a.Config.AuthPassword))
 	http.HandleFunc("/scrape", checkAuth(handleScrape(a.Scraper), a.Config.AuthUsername, a.Config.AuthPassword))
 	http.HandleFunc("/team_id", checkAuth(handleTeamID(a.DB), a.Config.AuthUsername, a.Config.AuthPassword))
@@ -57,46 +58,79 @@ func (a *App) Run() {
 	}
 
 	fmt.Printf("Listening on port %s...\n", port)
-	http.ListenAndServe(":"+port, nil)
+	err := http.ListenAndServe(":"+port, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func checkAuth(h http.HandlerFunc, validUsername, validPassword string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
 		log.Printf("Login attempt by %s: %v", username, ok)
+
 		if !ok || username != validUsername || password != validPassword {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 			http.Error(w, "Unauthorized.", http.StatusUnauthorized)
 			return
 		}
+
 		h(w, r)
 	}
 }
 
-func indexHandler(db *database.DB, appBaseDir string, apiBaseURL string) http.HandlerFunc {
+func loginHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		teams, err := db.FetchTeamsFromDB()
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error fetching teams: %v", err), http.StatusInternalServerError)
-			return
-		}
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "Authenticated.")
+	}
+}
 
-		data := TemplateData{
-			ApiBaseURL: apiBaseURL,
-			Teams:      teams,
-		}
+func indexHandler(db *database.DB, appBaseDir string, apiBaseURL string, validUsername, validPassword string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		username := r.URL.Query().Get("username")
+		password := r.URL.Query().Get("password")
+		isAuthenticated := username == validUsername && password == validPassword
+		log.Printf("Login attempt by %s: %v", username, isAuthenticated)
 
-		templateFile := filepath.Join(appBaseDir, "templates/index.html")
-		tmpl, err := template.ParseFiles(templateFile)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error parsing template: %v", err), http.StatusInternalServerError)
-			return
-		}
+		if !isAuthenticated {
+			templateFile := filepath.Join(appBaseDir, "templates/login.html")
 
-		err = tmpl.Execute(w, data)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error executing template: %v", err), http.StatusInternalServerError)
-			return
+			tmpl, err := template.ParseFiles(templateFile)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Error parsing template: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			err = tmpl.Execute(w, nil)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Error executing template: %v", err), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			teams, err := db.FetchTeamsFromDB()
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Error fetching teams: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			data := TemplateData{
+				ApiBaseURL: apiBaseURL,
+				Teams:      teams,
+			}
+
+			templateFile := filepath.Join(appBaseDir, "templates/main.html")
+			tmpl, err := template.ParseFiles(templateFile)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Error parsing template: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			err = tmpl.Execute(w, data)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Error executing template: %v", err), http.StatusInternalServerError)
+				return
+			}
 		}
 	}
 }

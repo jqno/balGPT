@@ -7,17 +7,8 @@
   <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-  <div id="signedOutContent" style="display:block;">
-    <div id="loginForm">
-      <label for="username">Username:</label>
-      <input type="text" id="username" required>
-      <label for="password">Password:</label>
-      <input type="password" id="password" required>
-      <button id="loginBtn">Log in</button>
-      <div id="loginError" style="color: red; display: none;">Invalid username or password. Please try again.</div>
-    </div>
-  </div>
-  <div id="signedInContent" style="display:none;">
+  <div id="signedInContent">
+    <!-- Content from the original signedInContent div -->
     <h1>Soccer Prediction</h1>
     {{if .Teams}}
       <div>
@@ -52,46 +43,37 @@
   <script>
     const apiBaseUrl = '{{.ApiBaseURL}}';
 
-    function updateContentVisibility() {
-      const signedIn = sessionStorage.getItem('auth') === 'true';
-      document.getElementById('signedInContent').style.display = signedIn ? 'block' : 'none';
-      document.getElementById('signedOutContent').style.display = signedIn ? 'none' : 'block';
-    }
-
-    function signIn() {
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-
-      if (!username || !password) {
-        document.getElementById('signInError').style.display = 'block';
-        return;
-      }
-
-      sessionStorage.setItem('auth', 'true');
-      sessionStorage.setItem('authHeader', 'Basic ' + btoa(username + ':' + password));
-      updateContentVisibility();
-    }
-
-    function signOut() {
-      sessionStorage.removeItem('auth');
+    function handleUnauthorized() {
       sessionStorage.removeItem('authHeader');
-      updateContentVisibility();
+      location.reload();
     }
 
-    function scrapeData() {
-      const url = `${apiBaseUrl}/scrape`;
-
+    function makeRequest(url, options) {
       const auth = sessionStorage.getItem('authHeader');
       if (!auth) {
-        alert('Please log in first');
-        return;
+        handleUnauthorized();
+        return Promise.reject();
       }
 
-      fetch(url, {
+      options = options || {};
+      options.headers = options.headers || {};
+      options.headers['Authorization'] = auth;
+
+      return fetch(url, options)
+        .then(response => {
+          if (response.status === 401) {
+            handleUnauthorized();
+            return Promise.reject();
+          }
+          return response;
+        });
+    }
+
+    // Update the scrapeData() and makePrediction() functions to use makeRequest() instead of fetch()
+    function scrapeData() {
+      const url = `${apiBaseUrl}/scrape`;
+      makeRequest(url, {
         method: 'GET',
-        headers: {
-          'Authorization': auth
-        }
       })
       .then(response => {
         if (response.ok) {
@@ -116,26 +98,16 @@
       }
 
       const url = `${apiBaseUrl}/predict?home_team_id=${homeTeamId}&away_team_id=${awayTeamId}`;
-
-      const auth = sessionStorage.getItem('authHeader');
-      if (!auth) {
-        alert('Please log in first');
-        return;
-      }
-
-      fetch(url, {
+      makeRequest(url, {
         method: 'GET',
-        headers: {
-          'Authorization': auth
-        }
       })
       .then(response => response.json())
       .then(data => {
         document.getElementById('result').innerHTML = formatPredictionResult(data);
       })
       .catch(error => {
-        console.error('Error:', error);
-        alert('Failed to make a prediction');
+          console.error('Error:', error);
+          alert('Failed to make a prediction');
       });
     }
 
@@ -174,9 +146,6 @@
 
     document.getElementById('scrape_btn')?.addEventListener('click', scrapeData);
     document.getElementById('predict_btn')?.addEventListener('click', makePrediction);
-
-    document.getElementById('loginBtn').addEventListener('click', signIn);
-    updateContentVisibility();
   </script>
 </body>
 </html>

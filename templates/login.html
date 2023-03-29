@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soccer Prediction - Login</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+  <div id="loginForm">
+    <label for="username">Username:</label>
+    <input type="text" id="username" required>
+    <label for="password">Password:</label>
+    <input type="password" id="password" required>
+    <button id="loginBtn">Log in</button>
+    <div id="loginError" style="color: red; display: none;">Invalid username or password. Please try again.</div>
+  </div>
+
+  <script>
+    const apiBaseUrl = '{{.ApiBaseURL}}';
+
+    function signIn() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        document.getElementById('loginError').style.display = 'block';
+        return;
+      }
+
+      fetch('/login', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(username + ':' + password),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      })
+        .then((response) => {
+          if (response.ok) {
+            // Redirect to main.html with the authentication information as query parameters
+            window.location.href = `main.html?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+          } else {
+            document.getElementById('loginError').style.display = 'block';
+          }
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          document.getElementById('loginError').style.display = 'block';
+        });
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', signIn);
+  </script>
+</body>
+</html>
