@@ -47,6 +47,7 @@ func (a *App) Run() {
 	http.HandleFunc("/predict", checkAuth(handlePrediction(a.Scraper, a.Predictor), a.Config.AuthUsername, a.Config.AuthPassword))
 	http.HandleFunc("/scrape", checkAuth(handleScrape(a.Scraper), a.Config.AuthUsername, a.Config.AuthPassword))
 	http.HandleFunc("/team_id", checkAuth(handleTeamID(a.DB), a.Config.AuthUsername, a.Config.AuthPassword))
+	http.HandleFunc("/health", healthCheckHandler(a.DB))
 
 	staticDir := filepath.Join(a.Config.AppBaseDir, "static")
 	fs := http.FileServer(http.Dir(staticDir))
@@ -212,5 +213,20 @@ func handleTeamID(db *database.DB) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]int{"team_id": teamID})
+	}
+}
+
+func healthCheckHandler(db *database.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check the database connection
+		if err := db.Conn.Ping(); err != nil {
+			// If there is an error, return a 500 Internal Server Error status code
+			http.Error(w, "Database connection failed", http.StatusInternalServerError)
+			return
+		}
+
+		// If everything is fine, return a 200 OK status code
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
 	}
 }

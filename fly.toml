@@ -24,6 +24,18 @@ primary_region = "ams"
   [[services.ports]]
     port = 443
     handlers = ["tls", "http"]
+
   [services.concurrency]
     hard_limit = 25
     soft_limit = 20
+
+  [[services.tcp_checks]]
+    interval = 10000 # in milliseconds, 10000 ms = 10 seconds
+    timeout = 2000 # in milliseconds, 2000 ms = 2 seconds
+    type = "http"
+    method = "GET"
+    path = "/health" # The path to your health check endpoint
+    protocol = "http"
+    port = "80"
+    tls_skip_verify = false
+    status = 200 # Expected HTTP status code for a healthy instance
