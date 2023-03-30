@@ -17,9 +17,7 @@
   </div>
 
   <script>
-    const apiBaseUrl = '{{.ApiBaseURL}}';
-
-    function signIn() {
+    async function signIn() {
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
 
@@ -28,26 +26,42 @@
         return;
       }
 
-      fetch('/login', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(username + ':' + password),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      })
-        .then((response) => {
-          if (response.ok) {
-            // Redirect to main.html with the authentication information as query parameters
-            window.location.href = `main.html?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+      const authHeader = 'Basic ' + btoa(username + ':' + password);
+      sessionStorage.setItem('authHeader', authHeader);
+
+      try {
+        const loginResponse = await fetch('/login', {
+          method: 'GET',
+          headers: {
+            'Authorization': authHeader
+          }
+        });
+
+        if (loginResponse.status === 401) {
+          document.getElementById('loginError').style.display = 'block';
+          sessionStorage.removeItem('authHeader');
+        } else {
+          const mainContentResponse = await fetch('/', {
+            method: 'GET',
+            headers: {
+              'Authorization': authHeader
+            }
+          });
+
+          if (mainContentResponse.ok) {
+            const content = await mainContentResponse.text();
+            document.open();
+            document.write(content);
+            document.close();
           } else {
             document.getElementById('loginError').style.display = 'block';
+            sessionStorage.removeItem('authHeader');
           }
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          document.getElementById('loginError').style.display = 'block';
-        });
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        sessionStorage.removeItem('authHeader');
+      }
     }
 
     document.getElementById('loginBtn').addEventListener('click', signIn);

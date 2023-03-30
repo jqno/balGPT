@@ -775,6 +775,183 @@ func indexHandler(db *database.DB, appBaseDir string, apiBaseURL string, validUs
 
 Now, the `indexHandler` checks the query parameters for the authentication information and validates them. If the authentication passes, it serves the `main.html` template. If not, it serves the `login.html` template.
 
+## Follow-up prompt
+
+> Oooooh no this is no good! Here are the requirements:
+>
+> - Credentials should NEVER be passed through url parameters. Keep them in SessionStorage and SessionStorage ONLY.
+> - Requests to the backend (/predict, /scrape) should always authenticate using Basic Authentication.
+> - login.html should put the credentials in the SessionStorage using the authHeader item.
+> - login.html should NOT redirect to main.html, because that's opaque to the front-end. Once authenticated, it should just reload the index, making sure the credentials are stored in SessionStorage.
+> - The backend, when asked for the index, should look at the content of the Authorization header: if it's correct, show main.html; if incorrect, show login.html.
+>
+> Please don't repeat entire functions: just show me the parts I need to change.
+
+Apologies for the confusion. I'll provide the changes you need to make to meet your requirements:
+
+1. Update the signIn function in login.html to store the credentials in sessionStorage and reload the index:
+
+```javascript
+function signIn() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  if (!username || !password) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+
+  sessionStorage.setItem('authHeader', 'Basic ' + btoa(username + ':' + password));
+  window.location.reload(); // Reload the index page
+}
+```
+
+1. Modify the indexHandler function in your backend to check the Authorization header and serve the appropriate template:
+
+```go
+func indexHandler(db *database.DB, appBaseDir string, validUsername, validPassword string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		isAuthenticated := ok && username == validUsername && password == validPassword
+
+		var templateFile string
+		if isAuthenticated {
+			templateFile = filepath.Join(appBaseDir, "templates/main.html")
+		} else {
+			templateFile = filepath.Join(appBaseDir, "templates/login.html")
+		}
+
+		tmpl, err := template.ParseFiles(templateFile)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error parsing template: %v", err), http.StatusInternalServerError)
+			return
+		}
+		err = tmpl.Execute(w, nil)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error executing template: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+```
+
+1. Update your Run function in the backend to wrap the indexHandler with checkAuth:
+
+```go
+http.HandleFunc("/", checkAuth(indexHandler(a.DB, a.Config.AppBaseDir, a.Config.AuthUsername, a.Config.AuthPassword), a.Config.AuthUsername, a.Config.AuthPassword))
+```
+
+With these changes, the credentials are securely stored in `sessionStorage`, and the backend serves the appropriate template based on the `Authorization` header.
+
+## Follow-up prompt
+
+> In order to fetch main.html, we need to pass the Authorization header in the GET request. window.location.reload() doesn't do that. How do we adjust?
+
+You're right, `window.location.reload()` doesn't allow setting custom headers. Instead, you can fetch the content of `main.html` via JavaScript and replace the content of the page. Here's how you can do it:
+
+1. Update the signIn function in login.html to fetch the content and replace the page content:
+
+```javascript
+async function signIn() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  if (!username || !password) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+
+  const authHeader = 'Basic ' + btoa(username + ':' + password);
+  sessionStorage.setItem('authHeader', authHeader);
+
+  try {
+    const response = await fetch('/', {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader
+      }
+    });
+
+    if (response.status === 401) {
+      document.getElementById('loginError').style.display = 'block';
+      sessionStorage.removeItem('authHeader');
+    } else {
+      const content = await response.text();
+      document.open();
+      document.write(content);
+      document.close();
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    sessionStorage.removeItem('authHeader');
+  }
+}
+```
+
+This change makes an asynchronous request to the backend with the `Authorization` header and replaces the current page content with the fetched content.
+
+With these adjustments, the credentials are securely stored in `sessionStorage`, and the backend serves the appropriate template based on the `Authorization` header.
+
+## Follow-up prompt:
+
+> Can you integrate that with the existing functionality to check the /login endpoint?
+
+Sure, I'll modify the `signIn` function to first check the `/login` endpoint before fetching the main content.
+
+Here's the updated `signIn` function in `login.html`:
+
+```javascript
+async function signIn() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  if (!username || !password) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+
+  const authHeader = 'Basic ' + btoa(username + ':' + password);
+  sessionStorage.setItem('authHeader', authHeader);
+
+  try {
+    const loginResponse = await fetch('/login', {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader
+      }
+    });
+
+    if (loginResponse.status === 401) {
+      document.getElementById('loginError').style.display = 'block';
+      sessionStorage.removeItem('authHeader');
+    } else {
+      const mainContentResponse = await fetch('/', {
+        method: 'GET',
+        headers: {
+          'Authorization': authHeader
+        }
+      });
+
+      if (mainContentResponse.ok) {
+        const content = await mainContentResponse.text();
+        document.open();
+        document.write(content);
+        document.close();
+      } else {
+        document.getElementById('loginError').style.display = 'block';
+        sessionStorage.removeItem('authHeader');
+      }
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    sessionStorage.removeItem('authHeader');
+  }
+}
+```
+
+This updated function first checks the `/login` endpoint. If the response status is 401 (Unauthorized), it displays an error message and removes the `authHeader` from `sessionStorage`. If the status is 200 (OK), it proceeds to fetch the main content and replaces the current page content with the fetched content.
+
 ## Note
 
-It took a surprising amount of back-and-forth to get this stuff to work, and I'm still not sure I got it right. Actually, I know I didn't get it right, because I'm using Basic Authentication and storing stuff in the sessionStorage, which isn't right. But for now it will do.
+It took a surprising amount of back-and-forth and a bunch of additional manual tweaks to get this stuff to work, and I'm still not sure I got it right. Actually, I know I didn't get it right, because I'm using Basic Authentication and storing stuff in the sessionStorage, which isn't right. But for now it will do.
+

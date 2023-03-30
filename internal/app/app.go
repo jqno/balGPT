@@ -89,9 +89,8 @@ func loginHandler() http.HandlerFunc {
 
 func indexHandler(db *database.DB, appBaseDir string, apiBaseURL string, validUsername, validPassword string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		username := r.URL.Query().Get("username")
-		password := r.URL.Query().Get("password")
-		isAuthenticated := username == validUsername && password == validPassword
+		username, password, ok := r.BasicAuth()
+		isAuthenticated := ok && username == validUsername && password == validPassword
 		log.Printf("Login attempt by %s: %v", username, isAuthenticated)
 
 		if !isAuthenticated {
