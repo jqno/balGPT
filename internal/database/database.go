@@ -96,10 +96,8 @@ func (db *DB) InsertOrUpdateMatch(homeTeam, awayTeam string, homeGoals, awayGoal
 	case err != nil:
 		return err
 	default:
-		// Update the existing match
-		_, err := db.Conn.Exec("UPDATE matches SET home_goals = $1, away_goals = $2 WHERE id = $3",
-			homeGoals, awayGoals, matchID)
-		return err
+		// Do nothing if the match already exists
+		return nil
 	}
 }
 
