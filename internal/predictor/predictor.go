@@ -18,14 +18,22 @@ func NewPredictor(db *database.DB) *Predictor {
 }
 
 func (p *Predictor) Predict(homeTeamID, awayTeamID int) (*Prediction, error) {
-	homeTeamAvgGoals, err := p.DB.GetTeamAvgGoals(homeTeamID, true)
-	if err != nil {
-		return nil, err
+	homeTeamAvgGoals := 0.0
+	awayTeamAvgGoals := 0.0
+	var err error
+
+	if homeTeamID != -1 {
+		homeTeamAvgGoals, err = p.DB.GetTeamAvgGoals(homeTeamID, true)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	awayTeamAvgGoals, err := p.DB.GetTeamAvgGoals(awayTeamID, false)
-	if err != nil {
-		return nil, err
+	if awayTeamID != -1 {
+		awayTeamAvgGoals, err = p.DB.GetTeamAvgGoals(awayTeamID, false)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	prediction := &Prediction{

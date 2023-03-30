@@ -136,12 +136,12 @@
 
     document.getElementById('home_team_name')?.addEventListener('input', function (e) {
       const selectedOption = Array.from(e.target.list.options).find(option => option.textContent === e.target.value);
-      document.getElementById('home_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : '';
+      document.getElementById('home_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : -1;
     });
 
     document.getElementById('away_team_name')?.addEventListener('input', function (e) {
       const selectedOption = Array.from(e.target.list.options).find(option => option.textContent === e.target.value);
-      document.getElementById('away_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : '';
+      document.getElementById('away_team_id').value = selectedOption ? selectedOption.getAttribute('data-value') : -1;
     });
 
     document.getElementById('scrape_btn')?.addEventListener('click', scrapeData);
