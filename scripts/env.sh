@@ -9,5 +9,5 @@ export DB_NAME=balgpt
 export AUTH_USERNAME=admin
 export AUTH_PASSWORD=admin
 
-export SCRAPER_URL=https://www.fcupdate.nl/uitslagen/s1598/nederland-keuken-kampioen-divisie-2022-2023/
+export SCRAPER_URL=https://www.fcupdate.nl/voetbalcompetities/nederland/keuken-kampioen-divisie/programma-uitslagen
 export API_BASE_URL=http://localhost:8080

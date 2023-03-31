@@ -3,6 +3,7 @@ package scraper
 import (
 	"net/http"
 	"strconv"
+	"regexp"
 	"strings"
 	"time"
 
@@ -41,31 +42,35 @@ func (scraped *ScrapeData) Scrape() error {
 	}
 
 	currentDate := time.Time{}
-	doc.Find("b, .line").EachWithBreak(func(i int, selection *goquery.Selection) bool {
-		if selection.Is("b") {
-			currentDate, _ = parseDutchDate(selection.Text())
+	doc.Find(".matches-panel").EachWithBreak(func(i int, selection *goquery.Selection) bool {
+		if selection.HasClass("align-left") && selection.HasClass("justify-center") {
+			dateStr := strings.TrimSpace(selection.Text())
+			re := regexp.MustCompile(`^\w+\s`)
+			dateStr = re.ReplaceAllString(dateStr, "")
+			currentDate, _ = parseDutchDate(dateStr)
 			return true
 		}
 
-		score := selection.Find(".center.score > span.big > a").Text()
-		scores := strings.Split(score, " - ")
-
-		if len(scores) != 2 {
+		if !selection.HasClass("Played") {
 			return true
 		}
 
-		homeGoals, err := strconv.Atoi(strings.TrimSpace(scores[0]))
+		homeTeam := strings.TrimSpace(selection.Find(".left-team > span").Text())
+		awayTeam := strings.TrimSpace(selection.Find(".right-team > span").Text())
+
+		scoreSelection := selection.Find(".score > div > i")
+		homeGoalsStr := strings.TrimSpace(scoreSelection.First().Text())
+		awayGoalsStr := strings.TrimSpace(scoreSelection.Last().Text())
+
+		homeGoals, err := strconv.Atoi(homeGoalsStr)
 		if err != nil {
 			return true
 		}
 
-		awayGoals, err := strconv.Atoi(strings.TrimSpace(scores[1]))
+		awayGoals, err := strconv.Atoi(awayGoalsStr)
 		if err != nil {
 			return true
 		}
-
-		homeTeam := strings.TrimSpace(selection.Find(".float-left.club > a").Text())
-		awayTeam := strings.TrimSpace(selection.Find(".float-right.club > a").Text())
 
 		if homeTeam == "" || awayTeam == "" {
 			return true
@@ -98,7 +103,7 @@ func parseDutchDate(dateStr string) (time.Time, error) {
 	}
 
 	// Parse the date string
-	date, err := time.Parse("02 01 2006", dateStr)
+	date, err := time.Parse("2 01 2006", dateStr)
 	if err != nil {
 		return time.Time{}, err
 	}
