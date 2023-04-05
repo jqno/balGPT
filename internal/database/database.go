@@ -129,21 +129,52 @@ func (db *DB) GetTeamID(teamName string) (int, error) {
 	return teamID, nil
 }
 
-func (db *DB) GetTeamAvgGoals(teamID int, isHomeTeam bool) (float64, error) {
+func (db *DB) AverageGoalsInLastMatches(teamID int, numberOfMatches int) (float64, error) {
+	query := `
+		WITH combined AS (
+			SELECT home_team AS team, home_goals AS goals, date
+			FROM matches
+			WHERE home_team = $1
+			UNION ALL
+			SELECT away_team AS team, away_goals AS goals, date
+			FROM matches
+			WHERE away_team = $1
+		)
+		SELECT AVG(goals)
+		FROM (
+			SELECT goals
+			FROM combined
+			ORDER BY date DESC
+			LIMIT $2
+		) last_matches;
+	`
+
 	var avgGoals float64
-	var err error
-
-	if isHomeTeam {
-		err = db.Conn.QueryRow("SELECT AVG(home_goals) FROM matches WHERE home_team = $1", teamID).Scan(&avgGoals)
-	} else {
-		err = db.Conn.QueryRow("SELECT AVG(away_goals) FROM matches WHERE away_team = $1", teamID).Scan(&avgGoals)
-	}
-
-	if err == sql.ErrNoRows {
-		return 0, nil
-	} else if err != nil {
-		return 0, err
+	err := db.Conn.QueryRow(query, teamID, numberOfMatches).Scan(&avgGoals)
+	if err != nil {
+		return 0, fmt.Errorf("Error fetching average goals for team %d: %v", teamID, err)
 	}
 
 	return avgGoals, nil
+}
+
+func (db *DB) LastYearMatchScores(homeTeamID, awayTeamID int) (int, int, error) {
+	query := `
+		SELECT home_goals, away_goals
+		FROM matches
+		WHERE home_team = $1 AND away_team = $2
+		ORDER BY date DESC
+		LIMIT 1;
+	`
+
+	var homeGoals, awayGoals int
+	err := db.Conn.QueryRow(query, homeTeamID, awayTeamID).Scan(&homeGoals, &awayGoals)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, 0, nil
+		}
+		return 0, 0, fmt.Errorf("Error fetching last match scores: %v", err)
+	}
+
+	return homeGoals, awayGoals, nil
 }

@@ -21,7 +21,7 @@ type App struct {
 	Config    *config.Config
 	DB        *database.DB
 	Scraper   *scraper.ScrapeData
-	Predictor *predictor.Predictor
+	Predictor predictor.Predictor
 }
 
 type TemplateData struct {
@@ -32,7 +32,14 @@ type TemplateData struct {
 func NewApp(cfg *config.Config) *App {
 	db := database.New(cfg.DBConnectionString, cfg.AppBaseDir)
 	scraper := scraper.NewScrapeData(db, cfg.ScraperURL)
-	predictor := predictor.NewPredictor(db)
+
+	predictor := predictor.NewCompositePredictor(
+		predictor.NewHomeAdvantagePredictor(),
+		predictor.NewAverageGoalsPredictor(db),
+		predictor.NewLastYearMatchPredictor(db),
+		predictor.NewFlippedLastYearMatchPredictor(db),
+	)
+
 	return &App{
 		Config:    cfg,
 		DB:        db,
@@ -135,7 +142,7 @@ func indexHandler(db *database.DB, appBaseDir string, apiBaseURL string, validUs
 	}
 }
 
-func handlePrediction(s *scraper.ScrapeData, p *predictor.Predictor) http.HandlerFunc {
+func handlePrediction(s *scraper.ScrapeData, p predictor.Predictor) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		homeTeamIDStr := r.URL.Query().Get("home_team_id")
 		awayTeamIDStr := r.URL.Query().Get("away_team_id")
