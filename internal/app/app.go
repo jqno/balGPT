@@ -38,6 +38,7 @@ func NewApp(cfg *config.Config) *App {
 		predictor.NewAverageGoalsPredictor(db),
 		predictor.NewLastYearMatchPredictor(db),
 		predictor.NewFlippedLastYearMatchPredictor(db),
+		predictor.NewLeaderboardDifferencePredictor(db),
 	)
 
 	return &App{

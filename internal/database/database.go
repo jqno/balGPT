@@ -178,3 +178,53 @@ func (db *DB) LastYearMatchScores(homeTeamID, awayTeamID int) (int, int, error) 
 
 	return homeGoals, awayGoals, nil
 }
+
+func (db *DB) GetCurrentSeasonLeaderboard() (map[int]int, error) {
+	seasonStart := time.Date(time.Now().Year(), time.August, 1, 0, 0, 0, 0, time.UTC)
+	if time.Now().Before(seasonStart) {
+		seasonStart = seasonStart.AddDate(-1, 0, 0)
+	}
+	query := `
+		SELECT
+			CASE
+				WHEN home_goals > away_goals THEN home_team
+				WHEN home_goals < away_goals THEN away_team
+				ELSE NULL
+			END AS winner,
+			CASE
+				WHEN home_goals = away_goals THEN home_team
+				ELSE NULL
+			END AS draw_team1,
+			CASE
+				WHEN home_goals = away_goals THEN away_team
+				ELSE NULL
+			END AS draw_team2
+		FROM matches
+		WHERE date >= $1;
+	`
+
+	rows, err := db.Conn.Query(query, seasonStart)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	points := make(map[int]int)
+	for rows.Next() {
+		var winner, drawTeam1, drawTeam2 sql.NullInt64
+		err := rows.Scan(&winner, &drawTeam1, &drawTeam2)
+		if err != nil {
+			return nil, err
+		}
+
+		if winner.Valid {
+			points[int(winner.Int64)] += 3
+		}
+		if drawTeam1.Valid {
+			points[int(drawTeam1.Int64)]++
+			points[int(drawTeam2.Int64)]++
+		}
+	}
+
+	return points, nil
+}
