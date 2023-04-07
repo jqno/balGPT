@@ -77,6 +77,7 @@ func checkAuth(h http.HandlerFunc, validUsername, validPassword string) http.Han
 	return func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
 		log.Printf("Login attempt by %s: %v", username, ok)
+		log.Printf("Requested url: %s", r.URL.String())
 
 		if !ok || username != validUsername || password != validPassword {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
@@ -99,7 +100,8 @@ func indexHandler(db *database.DB, appBaseDir string, apiBaseURL string, validUs
 	return func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
 		isAuthenticated := ok && username == validUsername && password == validPassword
-		log.Printf("Login attempt by %s: %v", username, isAuthenticated)
+		log.Printf("Index: login attempt by %s: %v", username, isAuthenticated)
+		log.Printf("Index: requested url: %s", r.URL.String())
 
 		if !isAuthenticated {
 			templateFile := filepath.Join(appBaseDir, "templates/login.html")
@@ -167,12 +169,14 @@ func handlePrediction(s *scraper.ScrapeData, p predictor.Predictor) http.Handler
 
 		err = s.Scrape()
 		if err != nil {
+			log.Printf("Error: %s", err)
 			http.Error(w, "Error while scraping data.", http.StatusInternalServerError)
 			return
 		}
 
 		prediction, err := p.Predict(homeTeamID, awayTeamID)
 		if err != nil {
+			log.Printf("Error: %s", err)
 			http.Error(w, "Error while generating prediction.", http.StatusInternalServerError)
 			return
 		}
@@ -188,6 +192,7 @@ func handleScrape(s *scraper.ScrapeData) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := s.Scrape()
 		if err != nil {
+			log.Printf("Error: %s", err)
 			http.Error(w, "Error while scraping data.", http.StatusInternalServerError)
 			return
 		}

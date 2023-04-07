@@ -8,7 +8,7 @@ primary_region = "ams"
   dockerfile = "Dockerfile"
 
 [env]
-  API_BASE_URL = "balgpt.fly.dev"
+  API_BASE_URL = "https://balgpt.fly.dev"
   APP_BASE_DIR = "/app"
   PORT = "8080"
   SCRAPER_URL = "https://www.fcupdate.nl/uitslagen/s1598/nederland-keuken-kampioen-divisie-2022-2023/"
