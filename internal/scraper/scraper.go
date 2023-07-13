@@ -2,21 +2,20 @@ package scraper
 
 import (
 	"net/http"
-	"strconv"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/jqno/balGPT/internal/database"
 )
 
 type ScrapeData struct {
-	DB  *database.DB
+	DB  DB
 	URL string
 }
 
-func NewScrapeData(db *database.DB, url string) *ScrapeData {
+func NewScrapeData(db DB, url string) *ScrapeData {
 	return &ScrapeData{DB: db, URL: url}
 }
 
