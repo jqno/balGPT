@@ -23,7 +23,9 @@ go mod download
 1. Run the application:
 
 ```bash
-go run cmd/balgpt-api/main.go
+source scripts/env.sh
+scripts/run-postgres.sh
+go run main.go
 ```
 
 The application will be accessible at http://localhost:8080.
