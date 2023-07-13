@@ -2,15 +2,13 @@ package predictor
 
 import (
 	"math"
-
-	"github.com/jqno/balGPT/internal/database"
 )
 
 type AverageGoalsPredictor struct {
-	db *database.DB
+	db DB
 }
 
-func NewAverageGoalsPredictor(db *database.DB) *AverageGoalsPredictor {
+func NewAverageGoalsPredictor(db DB) *AverageGoalsPredictor {
 	return &AverageGoalsPredictor{db: db}
 }
 

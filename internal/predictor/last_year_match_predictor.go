@@ -2,22 +2,21 @@ package predictor
 
 import (
 	"database/sql"
-
-	"github.com/jqno/balGPT/internal/database"
 )
 
 type LastYearMatchPredictor struct {
-	db           *database.DB
+	db           DB
 	flippedTeams bool
 }
 
-func NewLastYearMatchPredictor(db *database.DB) *LastYearMatchPredictor {
+func NewLastYearMatchPredictor(db DB) *LastYearMatchPredictor {
 	return &LastYearMatchPredictor{db: db, flippedTeams: false}
 }
 
-func NewFlippedLastYearMatchPredictor(db *database.DB) *LastYearMatchPredictor {
+func NewFlippedLastYearMatchPredictor(db DB) *LastYearMatchPredictor {
 	return &LastYearMatchPredictor{db: db, flippedTeams: true}
 }
+
 func (l *LastYearMatchPredictor) Predict(homeTeamID, awayTeamID int) (*Prediction, error) {
 	if l.flippedTeams {
 		homeTeamID, awayTeamID = awayTeamID, homeTeamID

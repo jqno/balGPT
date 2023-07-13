@@ -3,12 +3,10 @@ package predictor
 import (
 	"log"
 	"sort"
-
-	"github.com/jqno/balGPT/internal/database"
 )
 
 type LeaderboardDifferencePredictor struct {
-	db *database.DB
+	db DB
 }
 
 type leaderboardEntry struct {
@@ -16,7 +14,7 @@ type leaderboardEntry struct {
 	points int
 }
 
-func NewLeaderboardDifferencePredictor(db *database.DB) *LeaderboardDifferencePredictor {
+func NewLeaderboardDifferencePredictor(db DB) *LeaderboardDifferencePredictor {
 	return &LeaderboardDifferencePredictor{db: db}
 }
 
@@ -34,7 +32,7 @@ func (l *LeaderboardDifferencePredictor) Predict(homeTeamID, awayTeamID int) (*P
 	l.logLeaderboard(sortedLeaderboard)
 
 	homePosition, awayPosition := l.getTeamPositions(homeTeamID, awayTeamID, sortedLeaderboard)
-	positionDifference := abs(homePosition - awayPosition) / 2
+	positionDifference := abs(homePosition-awayPosition) / 2
 
 	if homePosition < awayPosition {
 		return &Prediction{HomeGoals: positionDifference, AwayGoals: 0}, nil
@@ -90,4 +88,3 @@ func abs(x int) int {
 	}
 	return x
 }
-
