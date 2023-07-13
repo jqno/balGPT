@@ -13,3 +13,4 @@
 node_modules/
 public/build/
 
+coverage.html
