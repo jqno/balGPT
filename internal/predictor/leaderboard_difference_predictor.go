@@ -19,6 +19,14 @@ func NewLeaderboardDifferencePredictor(db DB) *LeaderboardDifferencePredictor {
 }
 
 func (l *LeaderboardDifferencePredictor) Predict(homeTeamID, awayTeamID int) (*Prediction, error) {
+	if homeTeamID == -1 && awayTeamID == -1 {
+		return &Prediction{HomeGoals: 0, AwayGoals: 0}, nil
+	} else if homeTeamID == -1 {
+		return &Prediction{HomeGoals: 0, AwayGoals: 1}, nil
+	} else if awayTeamID == -1 {
+		return &Prediction{HomeGoals: 1, AwayGoals: 0}, nil
+	}
+
 	leaderboard, err := l.db.GetCurrentSeasonLeaderboard()
 	if err != nil {
 		return nil, err
@@ -65,8 +73,19 @@ func (l *LeaderboardDifferencePredictor) logLeaderboard(sortedLeaderboard []lead
 }
 
 func (l *LeaderboardDifferencePredictor) getTeamPositions(homeTeamID, awayTeamID int, sortedLeaderboard []leaderboardEntry) (int, int) {
-	var homePosition, awayPosition int
+	if homeTeamID == -1 && awayTeamID == -1 {
+		return 0, 0
+	}
 
+	if homeTeamID == -1 {
+		return 0, 1
+	}
+
+	if awayTeamID == -1 {
+		return 1, 0
+	}
+
+	var homePosition, awayPosition int
 	for position, entry := range sortedLeaderboard {
 		if entry.teamID == homeTeamID {
 			homePosition = position + 1

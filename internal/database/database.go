@@ -130,6 +130,10 @@ func (db *DB) GetTeamID(teamName string) (int, error) {
 }
 
 func (db *DB) AverageGoalsInLastMatches(teamID int, numberOfMatches int) (float64, error) {
+	if teamID == -1 {
+		return 0, nil
+	}
+
 	query := `
 		WITH combined AS (
 			SELECT home_team AS team, home_goals AS goals, date

@@ -67,3 +67,36 @@ func TestPredictWithEqualTeams(t *testing.T) {
 	assert.Equal(t, &Prediction{HomeGoals: 0, AwayGoals: 0}, prediction)
 	mockDB.AssertExpectations(t)
 }
+
+func TestPredictWithBothTeamsMinusOne(t *testing.T) {
+	mockDB := new(database_test.MockDB)
+	predictor := NewLeaderboardDifferencePredictor(mockDB)
+
+	prediction, err := predictor.Predict(-1, -1)
+
+	assert.NoError(t, err)
+	assert.Equal(t, &Prediction{HomeGoals: 0, AwayGoals: 0}, prediction)
+	mockDB.AssertExpectations(t)
+}
+
+func TestPredictWithHomeTeamMinusOne(t *testing.T) {
+	mockDB := new(database_test.MockDB)
+	predictor := NewLeaderboardDifferencePredictor(mockDB)
+
+	prediction, err := predictor.Predict(-1, 4)
+
+	assert.NoError(t, err)
+	assert.Equal(t, &Prediction{HomeGoals: 0, AwayGoals: 1}, prediction)
+	mockDB.AssertExpectations(t)
+}
+
+func TestPredictWithAwayTeamMinusOne(t *testing.T) {
+	mockDB := new(database_test.MockDB)
+	predictor := NewLeaderboardDifferencePredictor(mockDB)
+
+	prediction, err := predictor.Predict(1, -1)
+
+	assert.NoError(t, err)
+	assert.Equal(t, &Prediction{HomeGoals: 1, AwayGoals: 0}, prediction)
+	mockDB.AssertExpectations(t)
+}

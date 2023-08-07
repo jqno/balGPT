@@ -132,6 +132,25 @@ func TestAverageGoalsInLastMatches(t *testing.T) {
 	assert.Equal(t, 1.5, avg)
 }
 
+func TestAverageGoalsInLastMatchesWithNegativeTeamID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	database := DB{Conn: db}
+
+	avg, err := database.AverageGoalsInLastMatches(-1, 5)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.0, avg)
+
+	// Verify that no database interactions took place.
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
+}
+
 func TestLastYearMatchScores(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
