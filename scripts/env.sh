@@ -9,5 +9,6 @@ export DB_NAME=balgpt
 export AUTH_USERNAME=admin
 export AUTH_PASSWORD=admin
 
+# Change this? Change it in fly.toml too!
 export SCRAPER_URL=https://www.fcupdate.nl/voetbalcompetities/nederland/keuken-kampioen-divisie/programma-uitslagen
 export API_BASE_URL=http://localhost:8080
