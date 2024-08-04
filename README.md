@@ -20,12 +20,24 @@ cd balGPT
 go mod download
 ```
 
+1. Run tests:
+
+```bash
+go test ./...
+```
+
 1. Run the application:
 
 ```bash
 source scripts/env.sh
 scripts/run-postgres.sh
 go run main.go
+```
+
+1. Deploy the application:
+
+```bash
+fly deploy
 ```
 
 The application will be accessible at http://localhost:8080.
