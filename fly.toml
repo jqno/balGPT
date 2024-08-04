@@ -11,7 +11,7 @@ primary_region = "ams"
   API_BASE_URL = "https://balgpt.fly.dev"
   APP_BASE_DIR = "/app"
   PORT = "8080"
-  SCRAPER_URL = "https://www.fcupdate.nl/voetbalcompetities/nederland/keuken-kampioen-divisie/programma-uitslagen"
+  SCRAPER_URL = "https://www.fcupdate.nl/voetbalcompetities/nederland/eredivisie/programma-uitslagen"
 
 [[services]]
   protocol = "tcp"
